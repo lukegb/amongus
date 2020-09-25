@@ -1,0 +1,14 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: amongus
+Upstream-Contact: Luke Granger-Brown <git@lukegb.com>
+Source: https://github.com/lukegb/amongus
+
+# Sample paragraph, commented out:
+#
+# Files: src/*
+# Copyright: $YEAR $NAME <$CONTACT>
+# License: ...
+
+Files: poetry.lock
+Copyright: 2020 Luke Granger-Brown <git@lukegb.com
+License: Apache-2.0
