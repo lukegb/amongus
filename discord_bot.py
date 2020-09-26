@@ -103,6 +103,7 @@ class DiscordBot(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._game_state = GameState()
+        self._ready = False
         self._guild = None
         self._dead_channel = None
         self._main_channel = None
@@ -199,9 +200,12 @@ class DiscordBot(discord.Client):
 
     async def update_game_state(self, new_state):
         self._game_state = new_state
+        if not self._ready:
+            return
         await self.sync()
 
     async def on_ready(self):
+        self._ready = True
         self._guild = self.get_guild(FLAGS.guild_id)
         self._dead_channel = self._guild.get_channel(FLAGS.dead_channel_id)
         self._main_channel = self._guild.get_channel(FLAGS.main_channel_id)
