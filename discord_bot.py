@@ -103,6 +103,11 @@ class DiscordBot(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._game_state = GameState()
+        self._guild = None
+        self._dead_channel = None
+        self._main_channel = None
+        self._dead_role = None
+        self._alive_role = None
 
     @classmethod
     def _lowercase_names(cls, names):
@@ -120,7 +125,7 @@ class DiscordBot(discord.Client):
     async def sync_role_with_list(self, role, player_names):
         current_users = set(role.members)
         want_users = set()
-        for member in self.guild.members:
+        for member in self._guild.members:
             if self._is_player_in_list(member, player_names):
                 want_users.add(member)
 
@@ -142,33 +147,33 @@ class DiscordBot(discord.Client):
         ):
             want_alive_players = []
             want_dead_players = []
-        await self.sync_role_with_list(self.alive_role, self._game_state.alive_players)
-        await self.sync_role_with_list(self.dead_role, self._game_state.dead_players)
+        await self.sync_role_with_list(self._alive_role, self._game_state.alive_players)
+        await self.sync_role_with_list(self._dead_role, self._game_state.dead_players)
 
     async def sync_main_channel_status(self):
         if self._game_state.round_state in (
             amongus.state_tracker.RoundState.LOBBY,
             amongus.state_tracker.RoundState.POSTGAME,
         ):
-            await self.main_channel.set_permissions(
-                self.dead_role, connect=True, speak=True
+            await self._main_channel.set_permissions(
+                self._dead_role, connect=True, speak=True
             )
-            await self.main_channel.set_permissions(
-                self.alive_role, connect=True, speak=True
+            await self._main_channel.set_permissions(
+                self._alive_role, connect=True, speak=True
             )
         elif self._game_state.round_state == amongus.state_tracker.RoundState.MEETING:
-            await self.main_channel.set_permissions(
-                self.dead_role, connect=True, speak=False
+            await self._main_channel.set_permissions(
+                self._dead_role, connect=True, speak=False
             )
-            await self.main_channel.set_permissions(
-                self.alive_role, connect=True, speak=True
+            await self._main_channel.set_permissions(
+                self._alive_role, connect=True, speak=True
             )
         else:
-            await self.main_channel.set_permissions(
-                self.dead_role, connect=True, speak=False
+            await self._main_channel.set_permissions(
+                self._dead_role, connect=True, speak=False
             )
-            await self.main_channel.set_permissions(
-                self.alive_role, connect=True, speak=False
+            await self._main_channel.set_permissions(
+                self._alive_role, connect=True, speak=False
             )
 
     async def move_people(self):
@@ -178,13 +183,13 @@ class DiscordBot(discord.Client):
             amongus.state_tracker.RoundState.MEETING,
         ):
             # Empty the ghost lobby.
-            for member in self.dead_channel.members:
-                await member.move_to(self.main_channel)
+            for member in self._dead_channel.members:
+                await member.move_to(self._main_channel)
         elif self._game_state.round_state == amongus.state_tracker.RoundState.ACTIVE:
             # Moving ghosts to ghost lobby.
-            for member in self.main_channel.members:
+            for member in self._main_channel.members:
                 if self._is_player_in_list(member, self._game_state.dead_players):
-                    await member.move_to(self.dead_channel)
+                    await member.move_to(self._dead_channel)
 
     async def sync(self):
         logging.info("Syncing state")
@@ -197,11 +202,11 @@ class DiscordBot(discord.Client):
         await self.sync()
 
     async def on_ready(self):
-        self.guild = self.get_guild(FLAGS.guild_id)
-        self.dead_channel = self.guild.get_channel(FLAGS.dead_channel_id)
-        self.main_channel = self.guild.get_channel(FLAGS.main_channel_id)
-        self.dead_role = self.guild.get_role(FLAGS.dead_role)
-        self.alive_role = self.guild.get_role(FLAGS.alive_role)
+        self._guild = self.get_guild(FLAGS.guild_id)
+        self._dead_channel = self._guild.get_channel(FLAGS.dead_channel_id)
+        self._main_channel = self._guild.get_channel(FLAGS.main_channel_id)
+        self._dead_role = self._guild.get_role(FLAGS.dead_role)
+        self._alive_role = self._guild.get_role(FLAGS.alive_role)
         await self.sync()
 
 
